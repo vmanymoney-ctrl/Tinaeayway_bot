@@ -134,6 +134,7 @@ FINAL_TEXT = (
     "Tina.easy побудована не навколо принципу «роби більше».\n\n"
     "Навпаки — ми шукаємо <b>одну сферу, яка зараз найбільше впливає "
     "на твоє життя</b>, і починаємо саме з неї.\n\n"
+    "Підпишись на мій <a href=\"https://t.me/tina_easy\">КАНАЛ</a>, якщо ще не підписана, щоб не загубитись, і до зустрічі на твоєму шляху до змін 🙏🏻\n\n"
     "А коли відчуєш, що готова рухатися далі, поруч залишаться й інші маршрути:\n"
     "🔋 Енергія  🩷 Тіло  💰 Дохід\n\n"
     "Не потрібно змінювати все життя за один день.\n"
@@ -270,21 +271,38 @@ def get_question_text(num: int, total: int = 7) -> str:
 # ═══════════════════════════════════════════════════════════
 
 async def cmd_getid(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Команда /getid — або просто надішли медіафайл."""
     msg = update.message
-    if msg and msg.video_note:
+    if not msg:
+        return
+    if msg.video_note:
         await msg.reply_text(
             f"📹 <b>VIDEO_NOTE file_id:</b>\n<code>{msg.video_note.file_id}</code>",
             parse_mode="HTML"
         )
-    elif msg and msg.voice:
+    elif msg.voice:
         await msg.reply_text(
             f"🎤 <b>VOICE file_id:</b>\n<code>{msg.voice.file_id}</code>",
             parse_mode="HTML"
         )
-    elif msg and msg.photo:
+    elif msg.photo:
+        file_id = msg.photo[-1].file_id
         await msg.reply_text(
-            f"🖼 <b>PHOTO file_id:</b>\n<code>{msg.photo[-1].file_id}</code>",
+            f"🖼 <b>PHOTO file_id:</b>\n<code>{file_id}</code>\n\n"
+            f"Додай це значення як <b>FINAL_IMAGE</b> у Railway Variables.",
             parse_mode="HTML"
+        )
+    elif msg.document and msg.document.mime_type and msg.document.mime_type.startswith("image"):
+        # Якщо надіслано як файл (не стиснуте фото)
+        file_id = msg.document.file_id
+        await msg.reply_text(
+            f"🖼 <b>DOCUMENT (image) file_id:</b>\n<code>{file_id}</code>\n\n"
+            f"Додай як <b>FINAL_IMAGE</b> у Railway Variables.",
+            parse_mode="HTML"
+        )
+    else:
+        await msg.reply_text(
+            "Надішли мені фото, відео-кружечок або голосове — і я поверну file_id. 👆",
         )
 
 
@@ -548,9 +566,13 @@ def main():
     # ⚠️ ConversationHandler реєструється ПЕРШИМ — має пріоритет
     app.add_handler(conv)
 
-    # MessageHandler для /getid — тільки поза активною розмовою
+    # /getid як явна команда
+    app.add_handler(CommandHandler("getid", cmd_getid))
+
+    # MessageHandler для медіа поза розмовою — фото, відео, голосове
     app.add_handler(MessageHandler(
-        filters.VIDEO_NOTE | filters.VOICE | filters.PHOTO, cmd_getid
+        filters.VIDEO_NOTE | filters.VOICE | filters.PHOTO | filters.Document.IMAGE,
+        cmd_getid
     ))
 
     log.info("🤖 Бот «Не знаю, з чого почати» запущено!")
