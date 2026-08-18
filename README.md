@@ -1,1 +1,1 @@
-# Tinaeayway_bot
+# Tinaeasyway_bot
