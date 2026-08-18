@@ -28,6 +28,9 @@ VIDEO_NOTE_ENERGY     = os.getenv("VIDEO_NOTE_ENERGY", "")
 VIDEO_NOTE_BODY       = os.getenv("VIDEO_NOTE_BODY", "")
 VIDEO_NOTE_INCOME     = os.getenv("VIDEO_NOTE_INCOME", "")
 
+# Картинка до фінального повідомлення (file_id або URL)
+FINAL_IMAGE = os.getenv("FINAL_IMAGE", "")
+
 # Посилання результатів
 LINK_ENERGY = "https://t.me/Tinaeasy_bot"
 LINK_BODY   = "https://t.me/tina_hudni_easy"
@@ -148,7 +151,8 @@ RESULTS = {
             "ресурсу зараз може заважати тобі рухатися далі.\n\n"
             "І коли ми спочатку повертаємо собі сили, інші зміни стають "
             "набагато реальнішими.\n\n"
-            "Тому я б почала саме звідси ❤️"
+            "Тому я б почала саме звідси ❤️\n\n"
+            "👇🏼   👇🏼   👇🏼"
         ),
         "button": "🔵 Перейти до маршруту «Енергія» 🔋",
         "link": LINK_ENERGY,
@@ -164,9 +168,10 @@ RESULTS = {
             "А тому, що саме ця тема зараз найбільше займає твою увагу "
             "і впливає на те, як ти себе почуваєш.\n\n"
             "Давай не будемо намагатися змінити все життя одразу.\n\n"
-            "Зробимо перший крок саме тут ❤️"
+            "Зробимо перший крок саме тут ❤️\n\n"
+            "👇🏼   👇🏼   👇🏼"
         ),
-        "button": "🔴 Перейти до маршруту «Тіло» 🩷",
+        "button": "🔴 Перейти до маршруту «Тіло» 💃🏻",
         "link": LINK_BODY,
         "video_env": "VIDEO_NOTE_BODY",
         "label": "🩷 Тіло",
@@ -182,7 +187,8 @@ RESULTS = {
             "щось починати.\n\n"
             "Тому замість того, щоб одночасно виправляти все, "
             "я б спочатку розібралася саме з цим питанням.\n\n"
-            "Подивимося, які можливості можуть підійти саме тобі ❤️"
+            "Подивимося, які можливості можуть підійти саме тобі ❤️\n\n"
+            "👇🏼   👇🏼   👇🏼"
         ),
         "button": "🟢 Перейти до маршруту «Дохід» 💰",
         "link": LINK_INCOME,
@@ -273,6 +279,11 @@ async def cmd_getid(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     elif msg and msg.voice:
         await msg.reply_text(
             f"🎤 <b>VOICE file_id:</b>\n<code>{msg.voice.file_id}</code>",
+            parse_mode="HTML"
+        )
+    elif msg and msg.photo:
+        await msg.reply_text(
+            f"🖼 <b>PHOTO file_id:</b>\n<code>{msg.photo[-1].file_id}</code>",
             parse_mode="HTML"
         )
 
@@ -475,15 +486,23 @@ async def q7_cb(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> int:
         ]])
     )
 
-    # Затримка перед фінальним текстом — щоб кнопка не губилась
+    # Затримка перед фінальним повідомленням — щоб кнопка не губилась
     await asyncio.sleep(5)
 
-    # Фінальний текст (однаковий для всіх)
-    await ctx.bot.send_message(
-        chat_id,
-        FINAL_TEXT,
-        parse_mode="HTML"
-    )
+    # Фінальне повідомлення: спочатку картинка (якщо є), потім текст
+    if FINAL_IMAGE:
+        await ctx.bot.send_photo(
+            chat_id,
+            photo=FINAL_IMAGE,
+            caption=FINAL_TEXT,
+            parse_mode="HTML"
+        )
+    else:
+        await ctx.bot.send_message(
+            chat_id,
+            FINAL_TEXT,
+            parse_mode="HTML"
+        )
 
     # Сповіщення адміну
     await notify_admin(ctx.bot, update.effective_user, result_key)
@@ -531,7 +550,7 @@ def main():
 
     # MessageHandler для /getid — тільки поза активною розмовою
     app.add_handler(MessageHandler(
-        filters.VIDEO_NOTE | filters.VOICE, cmd_getid
+        filters.VIDEO_NOTE | filters.VOICE | filters.PHOTO, cmd_getid
     ))
 
     log.info("🤖 Бот «Не знаю, з чого почати» запущено!")
